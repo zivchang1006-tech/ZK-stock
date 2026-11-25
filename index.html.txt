@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>台股每日盤後籌碼戰情室 (全自動版)</title>
+  <style>
+    body { background-color: #0b0e14; color: #fff; font-family: "Microsoft JhengHei", sans-serif; padding: 20px; }
+    .header { display: flex; justify-content: space-between; border-bottom: 1px solid #1e2530; padding-bottom: 15px; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .card { background: #131720; border: 1px solid #1f2633; border-radius: 10px; padding: 15px; }
+    .card-header { display: flex; justify-content: space-between; font-size: 12px; color: #8c9ba5; margin-bottom: 10px; }
+    .card-value { font-size: 26px; font-weight: bold; margin-top: 5px; }
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+    .red { background: #ff4d4f; box-shadow: 0 0 8px #ff4d4f; }
+    .green { background: #52c41a; box-shadow: 0 0 8px #52c41a; }
+    .text-red { color: #ff4d4f; }
+    .text-green { color: #52c41a; }
+    table { width: 100%; border-collapse: collapse; background: #131720; border-radius: 10px; overflow: hidden; }
+    th, td { padding: 12px; text-align: center; border-bottom: 1px solid #1f2633; }
+    th { background: #1a202c; color: #8c9ba5; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <small style="color:#6c7a89;">TWSE / TAIFEX DAILY CHIP ANALYTICS</small>
+      <h1 style="margin:5px 0 0 0;">台股每日盤後籌碼戰情室 (自動連線版)</h1>
+    </div>
+    <div id="update-time" style="color:#8c9ba5;">讀取中...</div>
+  </div>
+
+  <div class="grid" id="cards-container"></div>
+
+  <h3>📊 每日籌碼統計歷史總表</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>日期</th>
+        <th>外資現貨(億)</th>
+        <th>投信現貨(億)</th>
+        <th>自營商現貨(億)</th>
+        <th>三大法人合計(億)</th>
+      </tr>
+    </thead>
+    <tbody id="history-body"></tbody>
+  </table>
+
+  <script>
+    // 自動去讀取同一資料夾下的 data.json 檔案
+    fetch('data.json?t=' + new Date().getTime())
+      .then(response => response.json())
+      .then(history => {
+        if (history.length === 0) {
+          document.getElementById('update-time').innerText = "目前尚無數據，等待機器人更新";
+          return;
+        }
+        const latest = history;
+        document.getElementById('update-time').innerText = "最後自動更新：" + latest.update_time;
+
+        const cards = [
+          { code: "05 三大法人", title: "外資現貨(億)", val: latest.foreign },
+          { code: "06 三大法人", title: "投信現貨(億)", val: latest.trust },
+          { code: "07 三大法人", title: "自營商現貨(億)", val: latest.dealer }
+        ];
+
+        document.getElementById('cards-container').innerHTML = cards.map(c => {
+          let isRed = c.val > 0;
+          return `
+            <div class="card">
+              <div class="card-header"><span>${c.code}</span><i class="dot ${isRed ? 'red' : 'green'}"></i></div>
+              <div style="color:#b0bac5; font-size:13px;">${c.title}</div>
+              <div class="card-value ${isRed ? 'text-red' : 'text-green'}">${c.val}</div>
+            </div>
+          `;
+        }).join('');
+
+        document.getElementById('history-body').innerHTML = history.map(row => {
+          let total = (row.foreign + row.trust + row.dealer).toFixed(2);
+          return `
+            <tr>
+              <td>${row.date}</td>
+              <td class="${row.foreign > 0 ? 'text-red' : 'text-green'}">${row.foreign}</td>
+              <td class="${row.trust > 0 ? 'text-red' : 'text-green'}">${row.trust}</td>
+              <td class="${row.dealer > 0 ? 'text-red' : 'text-green'}">${row.dealer}</td>
+              <td class="${total > 0 ? 'text-red' : 'text-green'}"><b>${total}</b></td>
+            </tr>
+          `;
+        }).join('');
+      });
+  </script>
+</body>
+</html>
