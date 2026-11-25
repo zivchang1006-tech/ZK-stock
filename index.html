@@ -6,80 +6,27 @@
   <title>台股盤後籌碼與多空評分儀表板</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #0b0f19;
-      color: #e2e8f0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      padding: 20px;
-      line-height: 1.5;
-    }
+    body { background-color: #0b0f19; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 20px; line-height: 1.5; }
     .container { max-width: 1680px; margin: 0 auto; }
-    
-    /* 頂部標題列 */
-    .header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    .header h1 { font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
+    .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .header h1 { font-size: 24px; font-weight: 700; color: #ffffff; }
     .subtitle { font-size: 13px; color: #94a3b8; margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
     .update-badge { background: #1e293b; color: #38bdf8; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-
-    /* 按鈕樣式 */
     .btn-group { display: flex; gap: 10px; }
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+    .btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .btn-primary { background-color: #0284c7; color: #ffffff; }
     .btn-primary:hover { background-color: #0369a1; }
     .btn-secondary { background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
     .btn-secondary:hover { background-color: #334155; }
-
-    /* 主卡片與表格 */
-    .card {
-      background-color: #131a2a;
-      border: 1px solid #1e293b;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      overflow: hidden;
-    }
+    .card { background-color: #131a2a; border: 1px solid #1e293b; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden; }
     .table-wrapper { overflow-x: auto; width: 100%; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; text-align: right; }
-    thead th {
-      background-color: #0f172a;
-      color: #94a3b8;
-      font-weight: 600;
-      padding: 14px 12px;
-      border-bottom: 1px solid #1e293b;
-      font-size: 12px;
-    }
-    tbody tr { border-bottom: 1px solid rgba(30, 41, 59, 0.7); transition: background 0.15s; }
+    thead th { background-color: #0f172a; color: #94a3b8; font-weight: 600; padding: 14px 12px; border-bottom: 1px solid #1e293b; font-size: 12px; }
+    tbody tr { border-bottom: 1px solid rgba(30, 41, 59, 0.7); }
     tbody tr:hover { background-color: rgba(30, 41, 59, 0.45); }
     td { padding: 12px; }
-
-    /* 凍結首欄日期 */
-    .sticky-col {
-      position: sticky;
-      left: 0;
-      background-color: #131a2a;
-      text-align: left;
-      font-weight: 600;
-      color: #f8fafc;
-      z-index: 2;
-      border-right: 1px solid #1e293b;
-    }
+    .sticky-col { position: sticky; left: 0; background-color: #131a2a; text-align: left; font-weight: 600; color: #f8fafc; z-index: 2; border-right: 1px solid #1e293b; }
     thead .sticky-col { background-color: #0f172a; z-index: 3; }
-
-    /* 台股紅綠配色與燈號 */
     .tw-up { color: #ef4444; font-weight: 600; }
     .tw-down { color: #22c55e; font-weight: 600; }
     .tw-neutral { color: #cbd5e1; }
@@ -87,107 +34,36 @@
     .dot-red { background-color: #ef4444; box-shadow: 0 0 6px #ef4444; }
     .dot-green { background-color: #22c55e; box-shadow: 0 0 6px #22c55e; }
     .dot-neutral { background-color: #64748b; }
-
-    /* 趨勢標籤與分數按鈕 */
     .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; display: inline-block; }
     .badge-strong-up { background: rgba(127, 29, 29, 0.6); color: #fca5a5; border: 1px solid #b91c1c; }
     .badge-up { background: rgba(69, 10, 10, 0.6); color: #f87171; border: 1px solid #7f1d1d; }
     .badge-strong-down { background: rgba(6, 78, 59, 0.6); color: #6ee7b7; border: 1px solid #047857; }
     .badge-down { background: rgba(2, 44, 34, 0.6); color: #34d399; border: 1px solid #065f46; }
     .badge-flat { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-
-    .score-btn {
-      background: #1e293b;
-      border: 1px solid #334155;
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      text-decoration: underline dotted;
-    }
+    .score-btn { background: #1e293b; border: 1px solid #334155; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; text-decoration: underline dotted; }
     .score-btn:hover { background: #334155; }
-
     .action-link { background: none; border: none; cursor: pointer; font-size: 12px; margin: 0 4px; }
     .edit-link { color: #38bdf8; }
     .del-link { color: #94a3b8; }
     .del-link:hover { color: #ef4444; }
-
-    /* 彈出視窗 (預設隱藏) */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.78);
-      z-index: 50;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      overflow-y: auto;
-    }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.78); z-index: 50; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
     .modal-overlay.active { display: flex; }
-    .modal-box {
-      background: #131a2a;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 780px;
-      padding: 24px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
+    .modal-box { background: #131a2a; border: 1px solid #334155; border-radius: 12px; width: 100%; max-width: 780px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.7); max-height: 90vh; overflow-y: auto; }
     .modal-box.small { max-width: 500px; }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #1e293b;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px; }
     .modal-header h2 { font-size: 18px; color: #fff; }
     .close-btn { background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
-    .close-btn:hover { color: #fff; }
-
-    /* 表單網格 */
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
     .form-group label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-    .form-group input {
-      width: 100%;
-      padding: 8px 10px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      color: #f8fafc;
-      font-size: 13px;
-    }
-    .form-group input:focus { outline: none; border-color: #38bdf8; }
+    .form-group input { width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 13px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #1e293b; padding-top: 16px; }
-
-    /* 明細列表 */
-    .detail-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 12px;
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
+    .detail-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
     .detail-desc { color: #94a3b8; font-size: 12px; margin-left: 8px; }
-
-    /* 捲軸美化 */
-    ::-webkit-scrollbar { height: 8px; width: 8px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <!-- 頂部標題與操作 -->
   <div class="header">
     <div>
       <h1>台股盤後籌碼與多空評分儀表板</h1>
@@ -203,7 +79,6 @@
     </div>
   </div>
 
-  <!-- 主數據表格 -->
   <div class="card">
     <div class="table-wrapper">
       <table>
@@ -238,7 +113,6 @@
   </div>
 </div>
 
-<!-- 新增/編輯表單彈窗 (預設隱藏，點擊按鈕才跳出) -->
 <div id="formModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
@@ -252,14 +126,260 @@
         <div class="form-group"><label>台指收盤 *</label><input type="number" step="any" id="f_index" required /></div>
         <div class="form-group"><label>現貨量(億) (&lt;8000綠)</label><input type="number" step="any" id="f_vol" required /></div>
         <div class="form-group"><label>融資餘額(億) (增綠/減紅)</label><input type="number" step="any" id="f_margin" required /></div>
-
         <div class="form-group"><label>美元台幣 (升紅/貶綠)</label><input type="number" step="any" id="f_usd" required /></div>
         <div class="form-group"><label>外資現貨(億) (買紅/賣綠)</label><input type="number" step="any" id="f_foreign" required /></div>
         <div class="form-group"><label>投信現貨(億) (買紅/賣綠)</label><input type="number" step="any" id="f_trust" required /></div>
         <div class="form-group"><label>自營商現貨(億) (買紅/賣綠)</label><input type="number" step="any" id="f_dealer" required /></div>
-
         <div class="form-group"><label>外資期未平倉 (空增綠)</label><input type="number" step="any" id="f_f_oi" required /></div>
         <div class="form-group"><label>五大淨額 (買紅/賣綠)</label><input type="number" step="any" id="f_top5" required /></div>
         <div class="form-group"><label>十大淨額 (買紅/賣綠)</label><input type="number" step="any" id="f_top10" required /></div>
         <div class="form-group"><label>P/C比(%) (&lt;95綠/&gt;100紅)</label><input type="number" step="any" id="f_pc_ratio" required /></div>
+        <div class="form-group"><label>外資選擇權(萬)</label><input type="number" step="any" id="f_f_opt" required /></div>
+        <div class="form-group"><label>小台散戶比(%) (多綠/空紅)</label><input type="number" step="any" id="f_mtx_retail" required /></div>
+        <div class="form-group"><label>微台散戶比(%) (多綠/空紅)</label><input type="number" step="any" id="f_tmf_retail" required /></div>
+        <div class="form-group"><label>台積電ADR漲跌幅(%)</label><input type="number" step="any" id="f_tsm_pct" required /></div>
+      </div>
+      <div class="modal-footer">
+        <button type="reset" class="btn btn-secondary">重設</button>
+        <button type="submit" class="btn btn-primary">儲存至本機預覽</button>
+      </div>
+    </form>
+  </div>
+</div>
 
+<div id="detailModal" class="modal-overlay">
+  <div class="modal-box small">
+    <div class="modal-header">
+      <h2 id="detailTitle">指標分數明細</h2>
+      <button class="close-btn" onclick="document.getElementById('detailModal').classList.remove('active')">&times;</button>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+  let records = [];
+
+  async function loadFromJson() {
+    const badge = document.getElementById('lastUpdateBadge');
+    try {
+      const res = await fetch('./data.json?t=' + Date.now());
+if (!res.ok) throw new Error('找不到 data.json');
+const data = await res.json();
+records = data.map(function(d) {
+let tsmPct = d.tsm_pct;
+if (tsmPct === undefined) {
+const prevPrice = (d.tsm_adr || 0) - (d.tsm_chg || 0);
+tsmPct = prevPrice > 0 ? Number(((d.tsm_chg / prevPrice) * 100).toFixed(2)) : 0;
+}
+return Object.assign({}, d, { tsm_pct: tsmPct });
+});
+const firstItem = records.at(0);
+if (firstItem && firstItem.update_time) {
+badge.innerText = '自動抓取更新時間：' + firstItem.update_time;
+} else {
+badge.innerText = '已載入 ' + records.length + ' 筆自動抓取數據';
+}
+renderTable();
+} catch (err) {
+badge.innerText = '⚠️ 尚未讀取到 data.json';
+document.getElementById('tableBody').innerHTML = '無法讀取 data.json：' + err.message + '';
+}
+}
+function numClass(val) {
+if (val > 0) return 'tw-up';
+if (val < 0) return 'tw-down';
+return 'tw-neutral';
+}
+function evaluateRow(curr, prev) {
+const items = [];
+let score = 0;
+const add = function(name, status, pts, desc) { score += pts; items.push({ name: name, status: status, pts: pts, desc: desc }); };
+if (curr.vol < 8000) add('現貨量', 'green', -1, curr.vol + '億 (<8000億)');
+else add('現貨量', 'red', 1, curr.vol + '億 (>=8000億)');
+if (prev && prev.margin > 0) {
+if (curr.margin > prev.margin) add('融資餘額', 'green', -1, '較前日增加 (+' + (curr.margin - prev.margin).toFixed(2) + ')');
+else if (curr.margin < prev.margin) add('融資餘額', 'red', 1, '較前日減少 (' + (curr.margin - prev.margin).toFixed(2) + ')');
+else add('融資餘額', 'neutral', 0, '與前日持平');
+} else add('融資餘額', 'neutral', 0, '無前日資料可比');
+if (prev && prev.usd > 0) {
+if (curr.usd < prev.usd) add('美元台幣', 'red', 1, '台幣升值 (' + prev.usd + ' → ' + curr.usd + ')');
+else if (curr.usd > prev.usd) add('美元台幣', 'green', -1, '台幣貶值 (' + prev.usd + ' → ' + curr.usd + ')');
+else add('美元台幣', 'neutral', 0, '匯率持平');
+} else add('美元台幣', 'neutral', 0, '無前日資料可比');
+const instList = [
+{ label: '外資現貨', val: curr.foreign },
+{ label: '投信現貨', val: curr.trust },
+{ label: '自營商現貨', val: curr.dealer }
+];
+instList.forEach(function(item) {
+if (item.val > 0) add(item.label, 'red', 1, '買超 ' + item.val + ' 億');
+else if (item.val < 0) add(item.label, 'green', -1, '賣超 ' + item.val + ' 億');
+else add(item.label, 'neutral', 0, '買賣持平 / 未公布');
+});
+if (prev) {
+if (curr.f_oi < prev.f_oi) add('外資期未平倉', 'green', -1, '空單增加 (' + prev.f_oi + ' → ' + curr.f_oi + ')');
+else if (curr.f_oi > prev.f_oi) add('外資期未平倉', 'red', 1, '空單減少/多單增 (' + prev.f_oi + ' → ' + curr.f_oi + ')');
+else add('外資期未平倉', 'neutral', 0, '未平倉持平');
+} else add('外資期未平倉', 'neutral', 0, '無前日資料可比');
+const topList = [
+{ label: '五大淨額', val: curr.top5 },
+{ label: '十大淨額', val: curr.top10 }
+];
+topList.forEach(function(item) {
+if (item.val > 0) add(item.label, 'red', 1, '淨多單 ' + item.val + ' 口');
+else if (item.val < 0) add(item.label, 'green', -1, '淨空單 ' + item.val + ' 口');
+else add(item.label, 'neutral', 0, '0 口 / 尚未抓取');
+});
+if (curr.pc_ratio > 0 && curr.pc_ratio < 95) add('P/C比', 'green', -1, curr.pc_ratio + '% (<95%)');
+else if (curr.pc_ratio > 100) add('P/C比', 'red', 1, curr.pc_ratio + '% (>100%)');
+else add('P/C比', 'neutral', 0, curr.pc_ratio + '% (95%~100%中性或無資料)');
+if (curr.f_opt > 0) add('外資選擇權', 'red', 1, curr.f_opt + ' 萬');
+else if (curr.f_opt < 0) add('外資選擇權', 'green', -1, curr.f_opt + ' 萬');
+else add('外資選擇權', 'neutral', 0, '0 萬');
+const retailList = [
+{ label: '小台散戶比', val: curr.mtx_retail },
+{ label: '微台散戶比', val: curr.tmf_retail }
+];
+retailList.forEach(function(item) {
+if (item.val > 0) add(item.label, 'green', -1, '散戶做多 ' + item.val + '%');
+else if (item.val < 0) add(item.label, 'red', 1, '散戶做空 ' + item.val + '%');
+else add(item.label, 'neutral', 0, '0%');
+});
+if (curr.tsm_pct > 0) add('台積電ADR', 'red', 1, '上漲 +' + curr.tsm_pct + '% (股價 ' + curr.tsm_adr + ')');
+else if (curr.tsm_pct < 0) add('台積電ADR', 'green', -1, '下跌 ' + curr.tsm_pct + '% (股價 ' + curr.tsm_adr + ')');
+else add('台積電ADR', 'neutral', 0, '平盤 0% (股價 ' + curr.tsm_adr + ')');
+let trend = { text: '震盪整理', cls: 'badge-flat' };
+if (score >= 4) trend = { text: '強勢偏多', cls: 'badge-strong-up' };
+else if (score >= 1) trend = { text: '溫和偏多', cls: 'badge-up' };
+else if (score <= -4) trend = { text: '強勢偏空', cls: 'badge-strong-down' };
+else if (score <= -1) trend = { text: '溫和偏空', cls: 'badge-down' };
+return { score: score, trend: trend, items: items };
+}
+function dotHtml(status) {
+return '';
+}
+function renderTable() {
+records.sort(function(a, b) { return b.date.localeCompare(a.date); });
+const tbody = document.getElementById('tableBody');
+tbody.innerHTML = '';
+records.forEach(function(r, idx) {
+const prev = records.at(idx + 1) || null;
+const evalRes = evaluateRow(r, prev);
+const getSt = function(name) {
+const found = evalRes.items.find(function(i) { return i.name === name; });
+return found ? found.status : 'neutral';
+};
+const tr = document.createElement('tr');
+tr.innerHTML =
+'' + r.date + '' +
+'' + Number(r.index).toLocaleString() + '' +
+'' + dotHtml(getSt('現貨量')) + r.vol + '' +
+'' + dotHtml(getSt('融資餘額')) + r.margin + '' +
+'' + dotHtml(getSt('美元台幣')) + r.usd + '' +
+'' + dotHtml(getSt('外資現貨')) + r.foreign + '' +
+'' + dotHtml(getSt('投信現貨')) + r.trust + '' +
+'' + dotHtml(getSt('自營商現貨')) + r.dealer + '' +
+'' + dotHtml(getSt('外資期未平倉')) + Number(r.f_oi).toLocaleString() + '' +
+'' + dotHtml(getSt('五大淨額')) + Number(r.top5).toLocaleString() + '' +
+'' + dotHtml(getSt('十大淨額')) + Number(r.top10).toLocaleString() + '' +
+'' + dotHtml(getSt('P/C比')) + r.pc_ratio + '%' +
+'' + dotHtml(getSt('外資選擇權')) + Number(r.f_opt).toLocaleString() + '' +
+'' + dotHtml(getSt('小台散戶比')) + r.mtx_retail + '%' +
+'' + dotHtml(getSt('微台散戶比')) + r.tmf_retail + '%' +
+'' + dotHtml(getSt('台積電ADR')) + r.tsm_pct + '%' +
+'' + evalRes.trend.text + '' +
+'' +
+'' +
+(evalRes.score > 0 ? '+' + evalRes.score : evalRes.score) + ' 分' +
+'' +
+'' +
+'' +
+'編輯' +
+'刪除' +
+'';
+tbody.appendChild(tr);
+});
+}
+function showDetails(idx) {
+const r = records.at(idx);
+const prev = records.at(idx + 1) || null;
+const evalRes = evaluateRow(r, prev);
+document.getElementById('detailTitle').innerText = r.date + ' 分數明細（總分：' + (evalRes.score > 0 ? '+' + evalRes.score : evalRes.score) + ' 分）';
+document.getElementById('detailContent').innerHTML = evalRes.items.map(function(i) {
+return '' +
+'' + dotHtml(i.status) + '' + i.name + '' + i.desc + '' +
+'' + (i.pts > 0 ? '+' + i.pts : i.pts) + '' +
+'';
+}).join('');
+document.getElementById('detailModal').classList.add('active');
+}
+function openModal(isEdit) {
+if (!isEdit) {
+document.getElementById('dataForm').reset();
+document.getElementById('editIndex').value = '-1';
+document.getElementById('modalTitle').innerText = '手動補登盤後數據';
+}
+document.getElementById('formModal').classList.add('active');
+}
+function closeModal() {
+document.getElementById('formModal').classList.remove('active');
+}
+function saveData(e) {
+e.preventDefault();
+const idx = parseInt(document.getElementById('editIndex').value);
+const existing = idx >= 0 ? records.at(idx) : null;
+const item = {
+date: document.getElementById('f_date').value,
+index: parseFloat(document.getElementById('f_index').value),
+vol: parseFloat(document.getElementById('f_vol').value),
+margin: parseFloat(document.getElementById('f_margin').value),
+usd: parseFloat(document.getElementById('f_usd').value),
+foreign: parseFloat(document.getElementById('f_foreign').value),
+trust: parseFloat(document.getElementById('f_trust').value),
+dealer: parseFloat(document.getElementById('f_dealer').value),
+f_oi: parseFloat(document.getElementById('f_f_oi').value),
+top5: parseFloat(document.getElementById('f_top5').value),
+top10: parseFloat(document.getElementById('f_top10').value),
+pc_ratio: parseFloat(document.getElementById('f_pc_ratio').value),
+f_opt: parseFloat(document.getElementById('f_f_opt').value),
+mtx_retail: parseFloat(document.getElementById('f_mtx_retail').value),
+tmf_retail: parseFloat(document.getElementById('f_tmf_retail').value),
+tsm_pct: parseFloat(document.getElementById('f_tsm_pct').value),
+tsm_adr: existing ? existing.tsm_adr : 0
+};
+if (idx >= 0) records.splice(idx, 1, item);
+else records.push(item);
+closeModal();
+renderTable();
+}
+function editRow(idx) {
+const r = records.at(idx);
+document.getElementById('editIndex').value = idx;
+document.getElementById('modalTitle').innerText = '微調盤後數據';
+document.getElementById('f_date').value = r.date;
+document.getElementById('f_index').value = r.index;
+document.getElementById('f_vol').value = r.vol;
+document.getElementById('f_margin').value = r.margin;
+document.getElementById('f_usd').value = r.usd;
+document.getElementById('f_foreign').value = r.foreign;
+document.getElementById('f_trust').value = r.trust;
+document.getElementById('f_dealer').value = r.dealer;
+document.getElementById('f_f_oi').value = r.f_oi;
+document.getElementById('f_top5').value = r.top5;
+document.getElementById('f_top10').value = r.top10;
+document.getElementById('f_pc_ratio').value = r.pc_ratio;
+document.getElementById('f_f_opt').value = r.f_opt;
+document.getElementById('f_mtx_retail').value = r.mtx_retail;
+document.getElementById('f_tmf_retail').value = r.tmf_retail;
+document.getElementById('f_tsm_pct').value = r.tsm_pct;
+openModal(true);
+}
+function deleteRow(idx) {
+const target = records.at(idx);
+if (confirm('確定要移除畫面上的 ' + target.date + ' 數據嗎？')) {
+records.splice(idx, 1);
+renderTable();
+}
+}
+loadFromJson();
