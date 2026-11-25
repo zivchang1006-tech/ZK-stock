@@ -1,194 +1,187 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>台股盤後籌碼與多空指標評分系統</title>
+  <title>台股盤後籌碼與多空評分儀表板</title>
   <script src="https://tailwindcss.com"></script>
-  <script src="https://unpkg.com"></script>
   <style>
-    /* 自訂深色捲軸 */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #09090b;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #27272a;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #3f3f46;
-    }
-    /* 紅綠燈發光效果 */
-    .light-red {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 9999px;
-      background-color: #ef4444;
-      box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
-    }
-    .light-green {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 9999px;
-      background-color: #22c55e;
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
-    }
-    .light-gray {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 9999px;
-      background-color: #52525b;
-    }
-    /* 台股習慣：正紅負綠 */
-    .tw-up { color: #f87171; }
-    .tw-down { color: #4ade80; }
-    .tw-neutral { color: #a1a1aa; }
+    body { background-color: #0b0f19; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card { background-color: #131a2a; border: 1px solid #1e293b; }
+    .input-dark { background-color: #0f172a; border: 1px solid #334155; color: #f8fafc; }
+    .input-dark:focus { outline: none; border-color: #38bdf8; }
+    /* 台股習慣：正數紅、負數綠 */
+    .tw-up { color: #ef4444; font-weight: 600; }
+    .tw-down { color: #22c55e; font-weight: 600; }
+    .dot-red { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #ef4444; box-shadow: 0 0 6px #ef4444; margin-right: 4px; }
+    .dot-green { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #22c55e; box-shadow: 0 0 6px #22c55e; margin-right: 4px; }
+    .dot-neutral { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #64748b; margin-right: 4px; }
+    ::-webkit-scrollbar { height: 8px; width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased selection:bg-zinc-800 selection:text-white">
+<body class="p-4 md:p-6">
 
-  <!-- 頂部導覽列 -->
-  <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur sticky top-0 z-30">
-    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="p-2 bg-zinc-800 rounded-lg border border-zinc-700">
-          <i data-lucide="activity" class="w-6 h-6 text-red-400"></i>
-        </div>
-        <div>
-          <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">台股盤後籌碼與多空評分儀表板</h1>
-          <p class="text-xs text-zinc-400">紅燈偏多 (+1分) ／ 綠燈偏空 (-1分) ｜ 點擊最終分數可檢視 14 項指標明細</p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <button onclick="openScoreRuleModal()" class="px-3 py-2 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition flex items-center gap-1.5">
-          <i data-lucide="info" class="w-4 h-4"></i>
-          評分規則說明
-        </button>
-        <button onclick="openFormModal()" class="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-950/50 transition flex items-center gap-1.5">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          新增每日盤後數據
-        </button>
-      </div>
+  <!-- 頂部標題與按鈕 -->
+  <div class="max-w-[1600px] mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white tracking-wide">台股盤後籌碼與多空評分儀表板</h1>
+      <p class="text-sm text-slate-400 mt-1">
+        <span class="dot-red"></span>紅燈偏多 (+1分) ／ <span class="dot-green"></span>綠燈偏空 (-1分) ｜ 點擊「最終分數」可檢視 14 項指標明細
+      </p>
     </div>
-  </header>
-
-  <!-- 主要內容區：數據表格 -->
-  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm text-right whitespace-nowrap border-collapse">
-          <thead>
-            <tr class="bg-zinc-950 text-zinc-400 border-b border-zinc-800 text-xs uppercase tracking-wider">
-              <th class="py-3.5 px-3 text-left sticky left-0 bg-zinc-950 z-20 border-r border-zinc-800">日期</th>
-              <th class="py-3.5 px-3">台指收盤</th>
-              <th class="py-3.5 px-3">現貨量(億)</th>
-              <th class="py-3.5 px-3">融資餘額(億)</th>
-              <th class="py-3.5 px-3">美元台幣</th>
-              <th class="py-3.5 px-3">外資現貨</th>
-              <th class="py-3.5 px-3">投信現貨</th>
-              <th class="py-3.5 px-3">自營商現貨</th>
-              <th class="py-3.5 px-3">外資期未平倉</th>
-              <th class="py-3.5 px-3">五大淨額</th>
-              <th class="py-3.5 px-3">十大淨額</th>
-              <th class="py-3.5 px-3">P/C比(%)</th>
-              <th class="py-3.5 px-3">外資選擇權(萬)</th>
-              <th class="py-3.5 px-3">小台散戶比(%)</th>
-              <th class="py-3.5 px-3">微台散戶比(%)</th>
-              <th class="py-3.5 px-3">台積電ADR(%)</th>
-              <th class="py-3.5 px-3 text-center">趨勢判定</th>
-              <th class="py-3.5 px-3 text-center">最終分數</th>
-              <th class="py-3.5 px-3 text-center sticky right-0 bg-zinc-950 z-20 border-l border-zinc-800">操作</th>
-            </tr>
-          </thead>
-          <tbody id="dataTableBody" class="divide-y divide-zinc-800/80">
-            <!-- JS 動態渲染列 -->
-          </tbody>
-        </table>
-      </div>
+    <div class="flex gap-3">
+      <button onclick="openModal()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow">
+        + 新增每日盤後數據
+      </button>
     </div>
-  </main>
+  </div>
 
-  <!-- 新增／編輯數據表單彈窗 -->
-  <div id="formModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-      <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-        <h2 id="formModalTitle" class="text-lg font-bold text-white flex items-center gap-2">
-          <i data-lucide="file-plus-2" class="w-5 h-5 text-red-400"></i>
-          新增每日盤後數據
-        </h2>
-        <button onclick="closeFormModal()" class="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+  <!-- 主數據表格 -->
+  <div class="max-w-[1600px] mx-auto card rounded-xl overflow-hidden shadow-xl">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-right whitespace-nowrap">
+        <thead class="bg-slate-900/90 text-slate-300 border-b border-slate-800 text-xs">
+          <tr>
+            <th class="py-3.5 px-3 text-left sticky left-0 bg-slate-900 z-10">日期</th>
+            <th class="py-3.5 px-3">台指收盤</th>
+            <th class="py-3.5 px-3">現貨量(億)</th>
+            <th class="py-3.5 px-3">融資餘額(億)</th>
+            <th class="py-3.5 px-3">美元台幣</th>
+            <th class="py-3.5 px-3">外資現貨</th>
+            <th class="py-3.5 px-3">投信現貨</th>
+            <th class="py-3.5 px-3">自營商現貨</th>
+            <th class="py-3.5 px-3">外資期未平倉</th>
+            <th class="py-3.5 px-3">五大淨額</th>
+            <th class="py-3.5 px-3">十大淨額</th>
+            <th class="py-3.5 px-3">P/C比(%)</th>
+            <th class="py-3.5 px-3">外資選擇權(萬)</th>
+            <th class="py-3.5 px-3">小台散戶比(%)</th>
+            <th class="py-3.5 px-3">微台散戶比(%)</th>
+            <th class="py-3.5 px-3">台積電ADR(%)</th>
+            <th class="py-3.5 px-3 text-center">趨勢判定</th>
+            <th class="py-3.5 px-3 text-center">最終分數</th>
+            <th class="py-3.5 px-3 text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="divide-y divide-slate-800/70"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 新增/編輯表單彈窗 -->
+  <div id="formModal" class="fixed inset-0 bg-black/75 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="card w-full max-w-3xl rounded-xl p-6 shadow-2xl my-8">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+        <h2 id="modalTitle" class="text-lg font-bold text-white">新增每日盤後數據</h2>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
       </div>
-
-      <form id="dataForm" onsubmit="handleFormSubmit(event)" class="p-6 overflow-y-auto space-y-6">
+      <form id="dataForm" onsubmit="saveData(event)" class="space-y-4 text-sm">
         <input type="hidden" id="editIndex" value="-1" />
-
-        <!-- 基本資料 -->
-        <div>
-          <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 border-b border-zinc-800 pb-1.5">基本行情與量能</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">日期 *</label>
-              <input type="date" id="f_date" required class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">台指收盤 *</label>
-              <input type="number" step="any" id="f_txClose" required placeholder="例: 22500" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">現貨量(億) <span class="text-zinc-500">(&lt;8000綠)</span></label>
-              <input type="number" step="any" id="f_spotVolume" required placeholder="例: 4200" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">融資餘額(億) <span class="text-zinc-500">(增綠/減紅)</span></label>
-              <input type="number" step="any" id="f_marginBalance" required placeholder="例: 3150.5" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">日期 *</label>
+            <input type="date" id="f_date" required class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">台指收盤 *</label>
+            <input type="number" step="any" id="f_close" required placeholder="22500" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">現貨量(億) (&lt;8000綠)</label>
+            <input type="number" step="any" id="f_vol" required placeholder="4200" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">融資餘額(億) (增綠/減紅)</label>
+            <input type="number" step="any" id="f_margin" required placeholder="3150.5" class="w-full px-3 py-2 rounded input-dark" />
           </div>
         </div>
 
-        <!-- 匯率與三大法人現貨 -->
-        <div>
-          <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 border-b border-zinc-800 pb-1.5">匯率與三大法人現貨 (買超+/賣超-)</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">美元台幣匯率 <span class="text-zinc-500">(升紅/貶綠)</span></label>
-              <input type="number" step="0.001" id="f_usdTwd" required placeholder="例: 32.150" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">外資現貨(億)</label>
-              <input type="number" step="any" id="f_foreignSpot" required placeholder="例: -150.2" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">投信現貨(億)</label>
-              <input type="number" step="any" id="f_trustSpot" required placeholder="例: 45.8" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">自營商現貨(億)</label>
-              <input type="number" step="any" id="f_dealerSpot" required placeholder="例: -20.5" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">美元台幣 (升紅/貶綠)</label>
+            <input type="number" step="any" id="f_usd" required placeholder="32.15" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">外資現貨 (買紅/賣綠)</label>
+            <input type="number" step="any" id="f_foreignSpot" required placeholder="-150.2" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">投信現貨 (買紅/賣綠)</label>
+            <input type="number" step="any" id="f_trustSpot" required placeholder="45.8" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">自營商現貨 (買紅/賣綠)</label>
+            <input type="number" step="any" id="f_dealerSpot" required placeholder="-20.5" class="w-full px-3 py-2 rounded input-dark" />
           </div>
         </div>
 
-        <!-- 期貨與大額交易人 -->
-        <div>
-          <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 border-b border-zinc-800 pb-1.5">期貨籌碼與大額交易人 (多單+/空單-)</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">外資期未平倉(口) <span class="text-zinc-500">(空增綠/空減紅)</span></label>
-              <input type="number" step="1" id="f_foreignFutures" required placeholder="例: -35000" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">五大交易人淨額(口)</label>
-              <input type="number" step="1" id="f_top5Net" required placeholder="例: -8500" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-300 mb-1">十大交易人淨額(口)</label>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">外資期未平倉 (空增綠)</label>
+            <input type="number" step="any" id="f_foreignFut" required placeholder="-35000" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">五大淨額 (買紅/賣綠)</label>
+            <input type="number" step="any" id="f_top5" required placeholder="-8500" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">十大淨額 (買紅/賣綠)</label>
+            <input type="number" step="any" id="f_top10" required placeholder="-6200" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">P/C比(%) (&lt;95綠/&gt;100紅)</label>
+            <input type="number" step="any" id="f_pc" required placeholder="92.5" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">外資選擇權(萬)</label>
+            <input type="number" step="any" id="f_foreignOpt" required placeholder="-1200" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">小台散戶比(%) (多綠/空紅)</label>
+            <input type="number" step="any" id="f_mtxRetail" required placeholder="12.4" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">微台散戶比(%) (多綠/空紅)</label>
+            <input type="number" step="any" id="f_tmfRetail" required placeholder="18.2" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">台積電ADR(%) (漲紅/跌綠)</label>
+            <input type="number" step="any" id="f_tsmAdr" required placeholder="1.35" class="w-full px-3 py-2 rounded input-dark" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <button type="reset" class="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">重設表單</button>
+          <button type="submit" class="px-5 py-2 rounded bg-sky-600 hover:bg-sky-500 text-white font-medium">儲存數據</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 分數明細彈窗 -->
+  <div id="detailModal" class="fixed inset-0 bg-black/75 hidden items-center justify-center z-50 p-4">
+    <div class="card w-full max-w-lg rounded-xl p-6 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+        <h3 id="detailTitle" class="text-lg font-bold text-white">指標分數明細</h3>
+        <button onclick="document.getElementById('detailModal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <div id="detailContent" class="space-y-2 text-sm max-h-96 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <script>
+    // 預設兩筆範例資料（依日期由新到舊排序）
+    let records = JSON.parse(localStorage.getItem('twStockData')) || [
+      { date: '2026-11-25', close: 22850, vol: 4120, margin: 3180.5, usd: 32.12, foreignSpot: 125.4, trustSpot: 38.2, dealerSpot: 15.6, foreignFut: -31000, top5: 4200, top10: 3100, pc: 108.5, foreignOpt: 2500, mtxRetail: -8.5, tmfRetail: -12.1, tsmAdr: 2.15 },
+      { date: '2026-11-24', close: 22610, vol: 3850, margin: 3195.0, usd: 32.25, foreignSpot: -85.3, trustSpot: 22.1, dealerSpot: -10.4, foreignFut: -34500, top5: -3200, top10: -2100, pc: 91.2, foreignOpt: -1500, mtxRetail: 11.2, tmfRetail: 15.4, tsmAdr: -0.85 }
+    ];
+
+    function numClass(val) {
+      if (val > 0) return 'tw-up';
+      if (val < 0) return 'tw-down';
