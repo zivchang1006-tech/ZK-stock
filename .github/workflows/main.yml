@@ -1,48 +1,37 @@
-name: Update Taiwan Stock Data
+name: Update TW Stock Data
 
 on:
-  workflow_dispatch:
-
   schedule:
-    - cron: "17 9 * * 1-5"
+    # GitHub Actions 使用 UTC 時間（台灣時間 UTC+8 需減 8 小時）
+    # 範例：UTC 07:40 對應台灣時間 週一至週五 15:40
+    - cron: '40 7 * * 1-5'
+  workflow_dispatch: # 保留手動觸發按鈕，方便隨時在 GitHub 測試
 
 permissions:
   contents: write
 
 jobs:
-  update:
+  fetch-and-commit:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          ref: main
+        uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install requests
 
-      - name: Check Python
-        run: python -m py_compile bot.py
-
-      - name: Run stock collector
+      - name: Run bot.py
         run: python bot.py
 
-      - name: Save data to GitHub
+      - name: Commit and push updated data.json
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add data.json
-
-          if git diff --cached --quiet; then
-            echo "No changes"
-          else
-            git commit -m "Update stock market data"
-            git push
-          fi
+          git commit -m "chore: update daily stock data" || echo "No changes to commit"
+          git push
