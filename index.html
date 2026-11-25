@@ -2,88 +2,138 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>台股每日盤後籌碼戰情室 (全自動版)</title>
+  <title>台股每日盤後籌碼戰情室</title>
   <style>
-    body { background-color: #0b0e14; color: #fff; font-family: "Microsoft JhengHei", sans-serif; padding: 20px; }
-    .header { display: flex; justify-content: space-between; border-bottom: 1px solid #1e2530; padding-bottom: 15px; margin-bottom: 20px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px; }
-    .card { background: #131720; border: 1px solid #1f2633; border-radius: 10px; padding: 15px; }
-    .card-header { display: flex; justify-content: space-between; font-size: 12px; color: #8c9ba5; margin-bottom: 10px; }
-    .card-value { font-size: 26px; font-weight: bold; margin-top: 5px; }
-    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+    body { background-color: #0b0e14; color: #fff; font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e2530; padding-bottom: 15px; margin-bottom: 15px; }
+    .legend { background: #131720; padding: 10px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1f2633; }
+    .dot { height: 9px; width: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
     .red { background: #ff4d4f; box-shadow: 0 0 8px #ff4d4f; }
     .green { background: #52c41a; box-shadow: 0 0 8px #52c41a; }
+    .gray { background: #8c8c8c; }
+    .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 30px; }
+    @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    .card { background: #131720; border: 1px solid #1f2633; border-radius: 10px; padding: 15px; }
+    .card-header { display: flex; justify-content: space-between; font-size: 12px; color: #6c7a89; margin-bottom: 8px; }
+    .card-title { font-size: 13px; color: #b0bac5; margin-bottom: 6px; }
+    .card-value { font-size: 24px; font-weight: bold; }
+    .card-sub { font-size: 12px; color: #6c7a89; margin-top: 6px; }
     .text-red { color: #ff4d4f; }
     .text-green { color: #52c41a; }
-    table { width: 100%; border-collapse: collapse; background: #131720; border-radius: 10px; overflow: hidden; }
-    th, td { padding: 12px; text-align: center; border-bottom: 1px solid #1f2633; }
-    th { background: #1a202c; color: #8c9ba5; }
+    .table-wrap { overflow-x: auto; background: #131720; border-radius: 10px; border: 1px solid #1f2633; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #1f2633; font-size: 13px; }
+    th { background: #181d27; color: #8c9ba5; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-red { background: rgba(255, 77, 79, 0.15); color: #ff4d4f; border: 1px solid rgba(255, 77, 79, 0.3); }
+    .badge-green { background: rgba(82, 196, 26, 0.15); color: #52c41a; border: 1px solid rgba(82, 196, 26, 0.3); }
   </style>
 </head>
 <body>
 
   <div class="header">
     <div>
-      <small style="color:#6c7a89;">TWSE / TAIFEX DAILY CHIP ANALYTICS</small>
-      <h1 style="margin:5px 0 0 0;">台股每日盤後籌碼戰情室 (自動連線版)</h1>
+      <small style="color:#6c7a89; letter-spacing:1px;">● TWSE / TAIFEX DAILY CHIP ANALYTICS</small>
+      <h1 style="margin:5px 0 0 0; font-size:22px;">台股每日盤後籌碼戰情室</h1>
     </div>
-    <div id="update-time" style="color:#8c9ba5;">讀取中...</div>
+    <div style="background:#131720; padding:8px 14px; border-radius:6px; border:1px solid #1f2633; font-size:13px; color:#8c9ba5;">
+      更新時間：<span id="update-time" style="color:#fff;">讀取中...</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div>
+      <span style="margin-right:15px;"><i class="dot red"></i>紅燈 (偏多訊號)</span>
+      <span style="margin-right:15px;"><i class="dot green"></i>綠燈 (偏空訊號)</span>
+      <span><i class="dot gray"></i>灰燈 (中性參考)</span>
+    </div>
+    <div style="color:#6c7a89;">依歷史紅綠燈比統計隔日台指漲跌作為操作參考</div>
   </div>
 
   <div class="grid" id="cards-container"></div>
 
-  <h3>📊 每日籌碼統計歷史總表</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>日期</th>
-        <th>外資現貨(億)</th>
-        <th>投信現貨(億)</th>
-        <th>自營商現貨(億)</th>
-        <th>三大法人合計(億)</th>
-      </tr>
-    </thead>
-    <tbody id="history-body"></tbody>
-  </table>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h3 style="margin:0; font-size:16px;">每日籌碼統計歷史總表</h3>
+    <span id="record-count" style="font-size:12px; color:#6c7a89;">已累積 0 個交易日</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th><th>台指結算</th><th>現貨量(億)</th><th>融資餘額(億)</th><th>美元台幣</th>
+          <th>外資現貨</th><th>投信現貨</th><th>自營商</th><th>外資期未平倉</th>
+          <th>五大淨額</th><th>十大淨額</th><th>P/C比</th><th>外資選(萬)</th>
+          <th>小台散戶</th><th>微台散戶</th><th>台積ADR</th><th>趨勢判定</th><th>操作建議</th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+  </div>
 
   <script>
-    // 自動去讀取同一資料夾下的 data.json 檔案
     fetch('data.json?t=' + new Date().getTime())
-      .then(response => response.json())
+      .then(res => res.json())
       .then(history => {
-        if (history.length === 0) {
-          document.getElementById('update-time').innerText = "目前尚無數據，等待機器人更新";
+        if (!history || history.length === 0) {
+          document.getElementById('update-time').innerText = "等待下午盤後自動更新";
           return;
         }
-        const latest = history;
-        document.getElementById('update-time').innerText = "最後自動更新：" + latest.update_time;
+        const d = history[0];
+        const prev = history[1] || d;
+        document.getElementById('update-time').innerText = d.update_time;
+        document.getElementById('record-count').innerText = `已累積 ${history.length} 個交易日`;
+
+        const fmtDiff = (curr, old, unit="") => {
+          let diff = (curr - old).toFixed(2).replace(/\.00$/, '');
+          return `較前日: ${diff > 0 ? '+' + diff : diff}${unit}`;
+        };
 
         const cards = [
-          { code: "05 三大法人", title: "外資現貨(億)", val: latest.foreign },
-          { code: "06 三大法人", title: "投信現貨(億)", val: latest.trust },
-          { code: "07 三大法人", title: "自營商現貨(億)", val: latest.dealer }
+          { id: "01 股期指數", name: "台指結算", val: d.index, sub: fmtDiff(d.index, prev.index), light: d.index >= prev.index ? "red" : "green" },
+          { id: "02 大盤量能", name: "現貨量(億)", val: d.vol, sub: fmtDiff(d.vol, prev.vol), light: "gray" },
+          { id: "03 散戶信用", name: "融資餘額(億)", val: d.margin, sub: fmtDiff(d.margin, prev.margin), light: d.margin >= prev.margin ? "red" : "green" },
+          { id: "04 匯率動向", name: "美元兌台幣", val: d.usd, sub: "台幣升值偏多", light: d.usd <= prev.usd ? "red" : "green" },
+          { id: "05 三大法人", name: "外資現貨(億)", val: d.foreign, sub: "買超偏多", light: d.foreign > 0 ? "red" : "green" },
+          { id: "06 三大法人", name: "投信現貨(億)", val: d.trust, sub: "買超偏多", light: d.trust > 0 ? "red" : "green" },
+          { id: "07 三大法人", name: "自營商現貨(億)", val: d.dealer, sub: "買超偏多", light: d.dealer > 0 ? "red" : "green" },
+          { id: "08 籌碼風向", name: "外資台指期未平倉", val: d.f_oi, sub: fmtDiff(d.f_oi, prev.f_oi), light: d.f_oi > 0 ? "red" : "green" },
+          { id: "09 大額交易人", name: "五大淨額(口)", val: d.top5 || "--", sub: "期交所大額", light: d.top5 > 0 ? "red" : (d.top5 < 0 ? "green" : "gray") },
+          { id: "10 大額交易人", name: "十大淨額(口)", val: d.top10 || "--", sub: "期交所大額", light: d.top10 > 0 ? "red" : (d.top10 < 0 ? "green" : "gray") },
+          { id: "11 選擇權指標", name: "P/C未平倉比", val: d.pc_ratio + "%", sub: "大於100%偏多", light: d.pc_ratio >= 100 ? "red" : "green" },
+          { id: "12 選擇權指標", name: "外資選擇權未平倉淨額(萬)", val: d.f_opt || "--", sub: "莊家動向", light: d.f_opt > 0 ? "red" : (d.f_opt < 0 ? "green" : "gray") },
+          { id: "13 散戶指標", name: "小台散戶多空比(%)", val: d.mtx_retail.toFixed(2), sub: "散戶偏空則大盤易漲", light: d.mtx_retail < 0 ? "red" : (d.mtx_retail > 0 ? "green" : "gray") },
+          { id: "14 散戶指標", name: "微台散戶多空比(%)", val: d.tmf_retail.toFixed(2), sub: "散戶反指標", light: d.tmf_retail < 0 ? "red" : (d.tmf_retail > 0 ? "green" : "gray") },
+          { id: "15 美股連動", name: "台積電美股ADR指數", val: d.tsm_adr, sub: `漲跌: ${d.tsm_chg > 0 ? '+' + d.tsm_chg : d.tsm_chg}`, light: d.tsm_chg >= 0 ? "red" : "green" }
         ];
 
-        document.getElementById('cards-container').innerHTML = cards.map(c => {
-          let isRed = c.val > 0;
-          return `
-            <div class="card">
-              <div class="card-header"><span>${c.code}</span><i class="dot ${isRed ? 'red' : 'green'}"></i></div>
-              <div style="color:#b0bac5; font-size:13px;">${c.title}</div>
-              <div class="card-value ${isRed ? 'text-red' : 'text-green'}">${c.val}</div>
-            </div>
-          `;
-        }).join('');
+        document.getElementById('cards-container').innerHTML = cards.map(c => `
+          <div class="card">
+            <div class="card-header"><span>${c.id}</span><i class="dot ${c.light}"></i></div>
+            <div class="card-title">${c.name}</div>
+            <div class="card-value ${c.light === 'red' ? 'text-red' : (c.light === 'green' ? 'text-green' : '')}">${c.val}</div>
+            <div class="card-sub">${c.sub}</div>
+          </div>
+        `).join('');
 
-        document.getElementById('history-body').innerHTML = history.map(row => {
-          let total = (row.foreign + row.trust + row.dealer).toFixed(2);
+        document.getElementById('history-body').innerHTML = history.map(r => {
+          let reds = [r.foreign > 0, r.trust > 0, r.dealer > 0, r.f_oi > 0, r.pc_ratio >= 100, r.tsm_chg >= 0].filter(Boolean).length;
+          let greens = 6 - reds;
+          let ratio = Math.round((reds / 6) * 100);
           return `
             <tr>
-              <td>${row.date}</td>
-              <td class="${row.foreign > 0 ? 'text-red' : 'text-green'}">${row.foreign}</td>
-              <td class="${row.trust > 0 ? 'text-red' : 'text-green'}">${row.trust}</td>
-              <td class="${row.dealer > 0 ? 'text-red' : 'text-green'}">${row.dealer}</td>
-              <td class="${total > 0 ? 'text-red' : 'text-green'}"><b>${total}</b></td>
+              <td>${r.date}</td><td>${r.index}</td><td>${r.vol}</td><td>${r.margin}</td><td>${r.usd}</td>
+              <td class="${r.foreign > 0 ? 'text-red' : 'text-green'}">${r.foreign}</td>
+              <td class="${r.trust > 0 ? 'text-red' : 'text-green'}">${r.trust}</td>
+              <td class="${r.dealer > 0 ? 'text-red' : 'text-green'}">${r.dealer}</td>
+              <td class="${r.f_oi > 0 ? 'text-red' : 'text-green'}">${r.f_oi}</td>
+              <td>${r.top5 || '--'}</td><td>${r.top10 || '--'}</td>
+              <td>${r.pc_ratio}%</td><td>${r.f_opt || '--'}</td>
+              <td>${r.mtx_retail.toFixed(2)}</td><td>${r.tmf_retail.toFixed(2)}</td>
+              <td class="${r.tsm_chg >= 0 ? 'text-red' : 'text-green'}">${r.tsm_adr}</td>
+              <td><span class="text-red">紅 ${reds}</span> / <span class="text-green">綠 ${greens}</span></td>
+              <td><span class="badge ${ratio >= 50 ? 'badge-red' : 'badge-green'}">${ratio >= 50 ? '紅燈佔 ' + ratio + '% · 偏多參考' : '綠燈佔 ' + (100-ratio) + '% · 偏空參考'}</span></td>
             </tr>
           `;
         }).join('');
