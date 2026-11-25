@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "date": "2026-11-25",
+    "update_time": "2026-11-25 06:46",
+    "index": 0,
+    "vol": 0,
+    "margin": 0,
+    "usd": 0,
+    "foreign": 0,
+    "trust": 0,
+    "dealer": 0,
+    "f_oi": 0,
+    "top5": 0,
+    "top10": 0,
+    "pc_ratio": 0,
+    "f_opt": 0,
+    "mtx_retail": 0,
+    "tmf_retail": 0,
+    "tsm_adr": 0,
+    "tsm_chg": 0
+  }
+]
