@@ -1,143 +1,194 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <title>台股每日盤後籌碼戰情室</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>台股盤後籌碼與多空指標評分系統</title>
+  <script src="https://tailwindcss.com"></script>
+  <script src="https://unpkg.com"></script>
   <style>
-    body { background-color: #0b0e14; color: #fff; font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e2530; padding-bottom: 15px; margin-bottom: 15px; }
-    .legend { background: #131720; padding: 10px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1f2633; }
-    .dot { height: 9px; width: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-    .red { background: #ff4d4f; box-shadow: 0 0 8px #ff4d4f; }
-    .green { background: #52c41a; box-shadow: 0 0 8px #52c41a; }
-    .gray { background: #8c8c8c; }
-    .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 30px; }
-    @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 768px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-    .card { background: #131720; border: 1px solid #1f2633; border-radius: 10px; padding: 15px; }
-    .card-header { display: flex; justify-content: space-between; font-size: 12px; color: #6c7a89; margin-bottom: 8px; }
-    .card-title { font-size: 13px; color: #b0bac5; margin-bottom: 6px; }
-    .card-value { font-size: 24px; font-weight: bold; }
-    .card-sub { font-size: 12px; color: #6c7a89; margin-top: 6px; }
-    .text-red { color: #ff4d4f; }
-    .text-green { color: #52c41a; }
-    .table-wrap { overflow-x: auto; background: #131720; border-radius: 10px; border: 1px solid #1f2633; }
-    table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-    th, td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #1f2633; font-size: 13px; }
-    th { background: #181d27; color: #8c9ba5; }
-    .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-    .badge-red { background: rgba(255, 77, 79, 0.15); color: #ff4d4f; border: 1px solid rgba(255, 77, 79, 0.3); }
-    .badge-green { background: rgba(82, 196, 26, 0.15); color: #52c41a; border: 1px solid rgba(82, 196, 26, 0.3); }
+    /* 自訂深色捲軸 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+    /* 紅綠燈發光效果 */
+    .light-red {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background-color: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+    }
+    .light-green {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background-color: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+    }
+    .light-gray {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      background-color: #52525b;
+    }
+    /* 台股習慣：正紅負綠 */
+    .tw-up { color: #f87171; }
+    .tw-down { color: #4ade80; }
+    .tw-neutral { color: #a1a1aa; }
   </style>
 </head>
-<body>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased selection:bg-zinc-800 selection:text-white">
 
-  <div class="header">
-    <div>
-      <small style="color:#6c7a89; letter-spacing:1px;">● TWSE / TAIFEX DAILY CHIP ANALYTICS</small>
-      <h1 style="margin:5px 0 0 0; font-size:22px;">台股每日盤後籌碼戰情室</h1>
+  <!-- 頂部導覽列 -->
+  <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-zinc-800 rounded-lg border border-zinc-700">
+          <i data-lucide="activity" class="w-6 h-6 text-red-400"></i>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">台股盤後籌碼與多空評分儀表板</h1>
+          <p class="text-xs text-zinc-400">紅燈偏多 (+1分) ／ 綠燈偏空 (-1分) ｜ 點擊最終分數可檢視 14 項指標明細</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="openScoreRuleModal()" class="px-3 py-2 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition flex items-center gap-1.5">
+          <i data-lucide="info" class="w-4 h-4"></i>
+          評分規則說明
+        </button>
+        <button onclick="openFormModal()" class="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-950/50 transition flex items-center gap-1.5">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          新增每日盤後數據
+        </button>
+      </div>
     </div>
-    <div style="background:#131720; padding:8px 14px; border-radius:6px; border:1px solid #1f2633; font-size:13px; color:#8c9ba5;">
-      更新時間：<span id="update-time" style="color:#fff;">讀取中...</span>
-    </div>
-  </div>
+  </header>
 
-  <div class="legend">
-    <div>
-      <span style="margin-right:15px;"><i class="dot red"></i>紅燈 (偏多訊號)</span>
-      <span style="margin-right:15px;"><i class="dot green"></i>綠燈 (偏空訊號)</span>
-      <span><i class="dot gray"></i>灰燈 (中性參考)</span>
-    </div>
-    <div style="color:#6c7a89;">依歷史紅綠燈比統計隔日台指漲跌作為操作參考</div>
-  </div>
-
-  <div class="grid" id="cards-container"></div>
-
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-    <h3 style="margin:0; font-size:16px;">每日籌碼統計歷史總表</h3>
-    <span id="record-count" style="font-size:12px; color:#6c7a89;">已累積 0 個交易日</span>
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>日期</th><th>台指結算</th><th>現貨量(億)</th><th>融資餘額(億)</th><th>美元台幣</th>
-          <th>外資現貨</th><th>投信現貨</th><th>自營商</th><th>外資期未平倉</th>
-          <th>五大淨額</th><th>十大淨額</th><th>P/C比</th><th>外資選(萬)</th>
-          <th>小台散戶</th><th>微台散戶</th><th>台積ADR</th><th>趨勢判定</th><th>操作建議</th>
-        </tr>
-      </thead>
-      <tbody id="history-body"></tbody>
-    </table>
-  </div>
-
-  <script>
-    fetch('data.json?t=' + new Date().getTime())
-      .then(res => res.json())
-      .then(history => {
-        if (!history || history.length === 0) {
-          document.getElementById('update-time').innerText = "等待下午盤後自動更新";
-          return;
-        }
-        const d = history[0];
-        const prev = history[1] || d;
-        document.getElementById('update-time').innerText = d.update_time;
-        document.getElementById('record-count').innerText = `已累積 ${history.length} 個交易日`;
-
-        const fmtDiff = (curr, old, unit="") => {
-          let diff = (curr - old).toFixed(2).replace(/\.00$/, '');
-          return `較前日: ${diff > 0 ? '+' + diff : diff}${unit}`;
-        };
-
-        const cards = [
-          { id: "01 股期指數", name: "台指結算", val: d.index, sub: fmtDiff(d.index, prev.index), light: d.index >= prev.index ? "red" : "green" },
-          { id: "02 大盤量能", name: "現貨量(億)", val: d.vol, sub: fmtDiff(d.vol, prev.vol), light: "gray" },
-          { id: "03 散戶信用", name: "融資餘額(億)", val: d.margin, sub: fmtDiff(d.margin, prev.margin), light: d.margin >= prev.margin ? "red" : "green" },
-          { id: "04 匯率動向", name: "美元兌台幣", val: d.usd, sub: "台幣升值偏多", light: d.usd <= prev.usd ? "red" : "green" },
-          { id: "05 三大法人", name: "外資現貨(億)", val: d.foreign, sub: "買超偏多", light: d.foreign > 0 ? "red" : "green" },
-          { id: "06 三大法人", name: "投信現貨(億)", val: d.trust, sub: "買超偏多", light: d.trust > 0 ? "red" : "green" },
-          { id: "07 三大法人", name: "自營商現貨(億)", val: d.dealer, sub: "買超偏多", light: d.dealer > 0 ? "red" : "green" },
-          { id: "08 籌碼風向", name: "外資台指期未平倉", val: d.f_oi, sub: fmtDiff(d.f_oi, prev.f_oi), light: d.f_oi > 0 ? "red" : "green" },
-          { id: "09 大額交易人", name: "五大淨額(口)", val: d.top5 || "--", sub: "期交所大額", light: d.top5 > 0 ? "red" : (d.top5 < 0 ? "green" : "gray") },
-          { id: "10 大額交易人", name: "十大淨額(口)", val: d.top10 || "--", sub: "期交所大額", light: d.top10 > 0 ? "red" : (d.top10 < 0 ? "green" : "gray") },
-          { id: "11 選擇權指標", name: "P/C未平倉比", val: d.pc_ratio + "%", sub: "大於100%偏多", light: d.pc_ratio >= 100 ? "red" : "green" },
-          { id: "12 選擇權指標", name: "外資選擇權未平倉淨額(萬)", val: d.f_opt || "--", sub: "莊家動向", light: d.f_opt > 0 ? "red" : (d.f_opt < 0 ? "green" : "gray") },
-          { id: "13 散戶指標", name: "小台散戶多空比(%)", val: d.mtx_retail.toFixed(2), sub: "散戶偏空則大盤易漲", light: d.mtx_retail < 0 ? "red" : (d.mtx_retail > 0 ? "green" : "gray") },
-          { id: "14 散戶指標", name: "微台散戶多空比(%)", val: d.tmf_retail.toFixed(2), sub: "散戶反指標", light: d.tmf_retail < 0 ? "red" : (d.tmf_retail > 0 ? "green" : "gray") },
-          { id: "15 美股連動", name: "台積電美股ADR指數", val: d.tsm_adr, sub: `漲跌: ${d.tsm_chg > 0 ? '+' + d.tsm_chg : d.tsm_chg}`, light: d.tsm_chg >= 0 ? "red" : "green" }
-        ];
-
-        document.getElementById('cards-container').innerHTML = cards.map(c => `
-          <div class="card">
-            <div class="card-header"><span>${c.id}</span><i class="dot ${c.light}"></i></div>
-            <div class="card-title">${c.name}</div>
-            <div class="card-value ${c.light === 'red' ? 'text-red' : (c.light === 'green' ? 'text-green' : '')}">${c.val}</div>
-            <div class="card-sub">${c.sub}</div>
-          </div>
-        `).join('');
-
-        document.getElementById('history-body').innerHTML = history.map(r => {
-          let reds = [r.foreign > 0, r.trust > 0, r.dealer > 0, r.f_oi > 0, r.pc_ratio >= 100, r.tsm_chg >= 0].filter(Boolean).length;
-          let greens = 6 - reds;
-          let ratio = Math.round((reds / 6) * 100);
-          return `
-            <tr>
-              <td>${r.date}</td><td>${r.index}</td><td>${r.vol}</td><td>${r.margin}</td><td>${r.usd}</td>
-              <td class="${r.foreign > 0 ? 'text-red' : 'text-green'}">${r.foreign}</td>
-              <td class="${r.trust > 0 ? 'text-red' : 'text-green'}">${r.trust}</td>
-              <td class="${r.dealer > 0 ? 'text-red' : 'text-green'}">${r.dealer}</td>
-              <td class="${r.f_oi > 0 ? 'text-red' : 'text-green'}">${r.f_oi}</td>
-              <td>${r.top5 || '--'}</td><td>${r.top10 || '--'}</td>
-              <td>${r.pc_ratio}%</td><td>${r.f_opt || '--'}</td>
-              <td>${r.mtx_retail.toFixed(2)}</td><td>${r.tmf_retail.toFixed(2)}</td>
-              <td class="${r.tsm_chg >= 0 ? 'text-red' : 'text-green'}">${r.tsm_adr}</td>
-              <td><span class="text-red">紅 ${reds}</span> / <span class="text-green">綠 ${greens}</span></td>
-              <td><span class="badge ${ratio >= 50 ? 'badge-red' : 'badge-green'}">${ratio >= 50 ? '紅燈佔 ' + ratio + '% · 偏多參考' : '綠燈佔 ' + (100-ratio) + '% · 偏空參考'}</span></td>
+  <!-- 主要內容區：數據表格 -->
+  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-right whitespace-nowrap border-collapse">
+          <thead>
+            <tr class="bg-zinc-950 text-zinc-400 border-b border-zinc-800 text-xs uppercase tracking-wider">
+              <th class="py-3.5 px-3 text-left sticky left-0 bg-zinc-950 z-20 border-r border-zinc-800">日期</th>
+              <th class="py-3.5 px-3">台指收盤</th>
+              <th class="py-3.5 px-3">現貨量(億)</th>
+              <th class="py-3.5 px-3">融資餘額(億)</th>
+              <th class="py-3.5 px-3">美元台幣</th>
+              <th class="py-3.5 px-3">外資現貨</th>
+              <th class="py-3.5 px-3">投信現貨</th>
+              <th class="py-3.5 px-3">自營商現貨</th>
+              <th class="py-3.5 px-3">外資期未平倉</th>
+              <th class="py-3.5 px-3">五大淨額</th>
+              <th class="py-3.5 px-3">十大淨額</th>
+              <th class="py-3.5 px-3">P/C比(%)</th>
+              <th class="py-3.5 px-3">外資選擇權(萬)</th>
+              <th class="py-3.5 px-3">小台散戶比(%)</th>
+              <th class="py-3.5 px-3">微台散戶比(%)</th>
+              <th class="py-3.5 px-3">台積電ADR(%)</th>
+              <th class="py-3.5 px-3 text-center">趨勢判定</th>
+              <th class="py-3.5 px-3 text-center">最終分數</th>
+              <th class="py-3.5 px-3 text-center sticky right-0 bg-zinc-950 z-20 border-l border-zinc-800">操作</th>
             </tr>
-          `;
-        }).join('');
-      });
-  </script>
-</body>
-</html>
+          </thead>
+          <tbody id="dataTableBody" class="divide-y divide-zinc-800/80">
+            <!-- JS 動態渲染列 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- 新增／編輯數據表單彈窗 -->
+  <div id="formModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+        <h2 id="formModalTitle" class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="file-plus-2" class="w-5 h-5 text-red-400"></i>
+          新增每日盤後數據
+        </h2>
+        <button onclick="closeFormModal()" class="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="dataForm" onsubmit="handleFormSubmit(event)" class="p-6 overflow-y-auto space-y-6">
+        <input type="hidden" id="editIndex" value="-1" />
+
+        <!-- 基本資料 -->
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 border-b border-zinc-800 pb-1.5">基本行情與量能</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">日期 *</label>
+              <input type="date" id="f_date" required class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">台指收盤 *</label>
+              <input type="number" step="any" id="f_txClose" required placeholder="例: 22500" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">現貨量(億) <span class="text-zinc-500">(&lt;8000綠)</span></label>
+              <input type="number" step="any" id="f_spotVolume" required placeholder="例: 4200" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">融資餘額(億) <span class="text-zinc-500">(增綠/減紅)</span></label>
+              <input type="number" step="any" id="f_marginBalance" required placeholder="例: 3150.5" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 匯率與三大法人現貨 -->
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 border-b border-zinc-800 pb-1.5">匯率與三大法人現貨 (買超+/賣超-)</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">美元台幣匯率 <span class="text-zinc-500">(升紅/貶綠)</span></label>
+              <input type="number" step="0.001" id="f_usdTwd" required placeholder="例: 32.150" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">外資現貨(億)</label>
+              <input type="number" step="any" id="f_foreignSpot" required placeholder="例: -150.2" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">投信現貨(億)</label>
+              <input type="number" step="any" id="f_trustSpot" required placeholder="例: 45.8" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">自營商現貨(億)</label>
+              <input type="number" step="any" id="f_dealerSpot" required placeholder="例: -20.5" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 期貨與大額交易人 -->
+        <div>
+          <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 border-b border-zinc-800 pb-1.5">期貨籌碼與大額交易人 (多單+/空單-)</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">外資期未平倉(口) <span class="text-zinc-500">(空增綠/空減紅)</span></label>
+              <input type="number" step="1" id="f_foreignFutures" required placeholder="例: -35000" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">五大交易人淨額(口)</label>
+              <input type="number" step="1" id="f_top5Net" required placeholder="例: -8500" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-zinc-300 mb-1">十大交易人淨額(口)</label>
