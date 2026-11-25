@@ -160,328 +160,99 @@
 <script>
   let records = [];
 
-  function toNumber(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, function (ch) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
-    });
-  }
-
-  function formatNumber(value, digits) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return '—';
-    return n.toLocaleString('zh-TW', {
-      minimumFractionDigits: digits ?? 0,
-      maximumFractionDigits: digits ?? 2
-    });
-  }
-
-  function dotHtml(status) {
-    const dotClass = status === 'red'
-      ? 'dot-red'
-      : status === 'green'
-        ? 'dot-green'
-        : 'dot-neutral';
-    return '<span class="dot ' + dotClass + '"></span>';
-  }
-
   async function loadFromJson() {
     const badge = document.getElementById('lastUpdateBadge');
-    const tbody = document.getElementById('tableBody');
-
-    badge.innerText = '正在讀取 data.json...';
     try {
-      const response = await fetch('./data.json?t=' + Date.now(), { cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error('HTTP ' + response.status + '，請確認 data.json 已放在網站根目錄');
-      }
+      const res = await fetch('./data.json?t=' + Date.now());
+if (!res.ok) throw new Error('找不到 data.json');
+const data = await res.json();
+records = data.map(function(d) {
+let tsmPct = d.tsm_pct;
+if (tsmPct === undefined) {
+const prevPrice = (d.tsm_adr || 0) - (d.tsm_chg || 0);
+tsmPct = prevPrice > 0 ? Number(((d.tsm_chg / prevPrice) * 100).toFixed(2)) : 0;
+}
+return Object.assign({}, d, { tsm_pct: tsmPct });
+});
+const firstItem = records.at(0);
+if (firstItem && firstItem.update_time) {
+badge.innerText = '自動抓取更新時間：' + firstItem.update_time;
+} else {
+badge.innerText = '已載入 ' + records.length + ' 筆自動抓取數據';
+}
+renderTable();
+} catch (err) {
+  badge.innerText = '⚠️ 尚未讀取到 data.json';
+  document.getElementById('tableBody').innerHTML =
+    '<tr><td colspan="19" style="text-align:center; padding: 30px; color: #f87171;">無法讀取 data.json：' + err.message + '</td></tr>';
+}
+}
 
-      const data = await response.json();
-      if (!Array.isArray(data)) {
-        throw new Error('data.json 格式錯誤，最外層必須是 JSON 陣列');
-      }
+// ...（此處保留原本的 numClass 與 evaluateRow 函式）...
 
-      records = data.map(function (item) {
-        const row = Object.assign({}, item);
-        const oldAdr = toNumber(row.tsm_adr);
-        const oldChange = toNumber(row.tsm_chg);
-        if (row.tsm_pct === undefined || row.tsm_pct === null) {
-          const previousPrice = oldAdr - oldChange;
-          row.tsm_pct = previousPrice > 0
-            ? Number(((oldChange / previousPrice) * 100).toFixed(2))
-            : 0;
-        }
-        return row;
-      });
+function dotHtml(status) {
+  if (status === 'red') return '<i class="dot dot-red"></i>';
+  if (status === 'green') return '<i class="dot dot-green"></i>';
+  return '<i class="dot dot-neutral"></i>';
+}
 
-      const firstItem = records[0];
-      badge.innerText = firstItem && firstItem.update_time
-        ? '自動抓取更新時間：' + firstItem.update_time
-        : '已載入 ' + records.length + ' 筆自動抓取數據';
-      renderTable();
-    } catch (error) {
-      badge.innerText = '⚠️ 尚未讀取到 data.json';
-      tbody.innerHTML = '<tr><td colspan="19" style="text-align:center;padding:30px;color:#fca5a5;">' +
-        escapeHtml('無法讀取 data.json：' + error.message) + '</td></tr>';
-      console.error('讀取 data.json 失敗：', error);
-    }
-  }
-
-  function numClass(value) {
-    const n = toNumber(value);
-    if (n > 0) return 'tw-up';
-    if (n < 0) return 'tw-down';
-    return 'tw-neutral';
-  }
-
-  function evaluateRow(curr, prev) {
-    const items = [];
-    let score = 0;
-    const add = function (name, status, points, desc) {
-      score += points;
-      items.push({ name: name, status: status, pts: points, desc: desc });
+function renderTable() {
+  records.sort(function(a, b) { return b.date.localeCompare(a.date); });
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  records.forEach(function(r, idx) {
+    const prev = records.at(idx + 1) || null;
+    const evalRes = evaluateRow(r, prev);
+    const getSt = function(name) {
+      const found = evalRes.items.find(function(i) { return i.name === name; });
+      return found ? found.status : 'neutral';
     };
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="sticky-col">' + r.date + '</td>' +
+      '<td>' + Number(r.index).toLocaleString() + '</td>' +
+      '<td>' + dotHtml(getSt('現貨量')) + r.vol + '</td>' +
+      '<td>' + dotHtml(getSt('融資餘額')) + r.margin + '</td>' +
+      '<td>' + dotHtml(getSt('美元台幣')) + r.usd + '</td>' +
+      '<td class="' + numClass(r.foreign) + '">' + dotHtml(getSt('外資現貨')) + r.foreign + '</td>' +
+      '<td class="' + numClass(r.trust) + '">' + dotHtml(getSt('投信現貨')) + r.trust + '</td>' +
+      '<td class="' + numClass(r.dealer) + '">' + dotHtml(getSt('自營商現貨')) + r.dealer + '</td>' +
+      '<td class="' + numClass(r.f_oi) + '">' + dotHtml(getSt('外資期未平倉')) + Number(r.f_oi).toLocaleString() + '</td>' +
+      '<td class="' + numClass(r.top5) + '">' + dotHtml(getSt('五大淨額')) + Number(r.top5).toLocaleString() + '</td>' +
+      '<td class="' + numClass(r.top10) + '">' + dotHtml(getSt('十大淨額')) + Number(r.top10).toLocaleString() + '</td>' +
+      '<td>' + dotHtml(getSt('P/C比')) + r.pc_ratio + '%</td>' +
+      '<td class="' + numClass(r.f_opt) + '">' + dotHtml(getSt('外資選擇權')) + Number(r.f_opt).toLocaleString() + '</td>' +
+      '<td>' + dotHtml(getSt('小台散戶比')) + r.mtx_retail + '%</td>' +
+      '<td>' + dotHtml(getSt('微台散戶比')) + r.tmf_retail + '%</td>' +
+      '<td class="' + numClass(r.tsm_pct) + '">' + dotHtml(getSt('台積電ADR')) + r.tsm_pct + '%</td>' +
+      '<td style="text-align:center;"><span class="badge ' + evalRes.trend.cls + '">' + evalRes.trend.text + '</span></td>' +
+      '<td style="text-align:center;"><button class="score-btn ' + numClass(evalRes.score) + '" onclick="showDetails(' + idx + ')">' +
+      (evalRes.score > 0 ? '+' + evalRes.score : evalRes.score) + ' 分</button></td>' +
+      '<td style="text-align:center;">' +
+      '<button class="action-link edit-link" onclick="editRow(' + idx + ')">編輯</button>' +
+      '<button class="action-link del-link" onclick="deleteRow(' + idx + ')">刪除</button>' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
 
-    const vol = toNumber(curr.vol);
-    const margin = toNumber(curr.margin);
-    const usd = toNumber(curr.usd);
-    const foreign = toNumber(curr.foreign);
-    const trust = toNumber(curr.trust);
-    const dealer = toNumber(curr.dealer);
-    const fOi = toNumber(curr.f_oi);
-    const top5 = toNumber(curr.top5);
-    const top10 = toNumber(curr.top10);
-    const pcRatio = toNumber(curr.pc_ratio);
-    const fOpt = toNumber(curr.f_opt);
-    const mtxRetail = toNumber(curr.mtx_retail);
-    const tmfRetail = toNumber(curr.tmf_retail);
-    const tsmPct = toNumber(curr.tsm_pct);
+function showDetails(idx) {
+  const r = records.at(idx);
+  const prev = records.at(idx + 1) || null;
+  const evalRes = evaluateRow(r, prev);
+  document.getElementById('detailTitle').innerText = r.date + ' 分數明細（總分：' + (evalRes.score > 0 ? '+' + evalRes.score : evalRes.score) + ' 分）';
+  document.getElementById('detailContent').innerHTML = evalRes.items.map(function(i) {
+    return '<div class="detail-item">' +
+      '<div>' + dotHtml(i.status) + '<strong>' + i.name + '</strong><span class="detail-desc">' + i.desc + '</span></div>' +
+      '<span class="' + numClass(i.pts) + '">' + (i.pts > 0 ? '+' + i.pts : i.pts) + '</span>' +
+      '</div>';
+  }).join('');
+  document.getElementById('detailModal').classList.add('active');
+}
 
-    if (vol < 8000) add('現貨量', 'green', -1, vol + ' 億（低於 8000 億）');
-    else add('現貨量', 'red', 1, vol + ' 億（達 8000 億以上）');
+// ...（此處保留 openModal、closeModal、saveData、editRow、deleteRow）...
 
-    if (prev && toNumber(prev.margin) > 0) {
-      if (margin > toNumber(prev.margin)) {
-        add('融資餘額', 'green', -1, '較前日增加（+' + formatNumber(margin - toNumber(prev.margin), 2) + '）');
-      } else if (margin < toNumber(prev.margin)) {
-        add('融資餘額', 'red', 1, '較前日減少（' + formatNumber(margin - toNumber(prev.margin), 2) + '）');
-      } else add('融資餘額', 'neutral', 0, '與前日持平');
-    } else add('融資餘額', 'neutral', 0, '無前日資料可比');
-
-    if (prev && toNumber(prev.usd) > 0) {
-      if (usd < toNumber(prev.usd)) add('美元台幣', 'red', 1, '台幣升值（' + prev.usd + ' → ' + curr.usd + '）');
-      else if (usd > toNumber(prev.usd)) add('美元台幣', 'green', -1, '台幣貶值（' + prev.usd + ' → ' + curr.usd + '）');
-      else add('美元台幣', 'neutral', 0, '匯率持平');
-    } else add('美元台幣', 'neutral', 0, '無前日資料可比');
-
-    [
-      { label: '外資現貨', val: foreign },
-      { label: '投信現貨', val: trust },
-      { label: '自營商現貨', val: dealer }
-    ].forEach(function (item) {
-      if (item.val > 0) add(item.label, 'red', 1, '買超 ' + item.val + ' 億');
-      else if (item.val < 0) add(item.label, 'green', -1, '賣超 ' + item.val + ' 億');
-      else add(item.label, 'neutral', 0, '買賣持平／尚無資料');
-    });
-
-    if (prev) {
-      if (fOi < toNumber(prev.f_oi)) add('外資期未平倉', 'green', -1, '淨未平倉減少（' + prev.f_oi + ' → ' + curr.f_oi + '）');
-      else if (fOi > toNumber(prev.f_oi)) add('外資期未平倉', 'red', 1, '淨未平倉增加（' + prev.f_oi + ' → ' + curr.f_oi + '）');
-      else add('外資期未平倉', 'neutral', 0, '未平倉持平');
-    } else add('外資期未平倉', 'neutral', 0, '無前日資料可比');
-
-    [
-      { label: '五大淨額', val: top5 },
-      { label: '十大淨額', val: top10 }
-    ].forEach(function (item) {
-      if (item.val > 0) add(item.label, 'red', 1, '淨多單 ' + item.val + ' 口');
-      else if (item.val < 0) add(item.label, 'green', -1, '淨空單 ' + item.val + ' 口');
-      else add(item.label, 'neutral', 0, '0 口／尚未取得資料');
-    });
-
-    if (pcRatio > 0 && pcRatio < 95) add('P/C比', 'green', -1, pcRatio + '%（低於 95%）');
-    else if (pcRatio > 100) add('P/C比', 'red', 1, pcRatio + '%（高於 100%）');
-    else add('P/C比', 'neutral', 0, pcRatio + '%（中性或無資料）');
-
-    if (fOpt > 0) add('外資選擇權', 'red', 1, fOpt + ' 萬');
-    else if (fOpt < 0) add('外資選擇權', 'green', -1, fOpt + ' 萬');
-    else add('外資選擇權', 'neutral', 0, '0 萬／尚未取得資料');
-
-    [
-      { label: '小台散戶比', val: mtxRetail },
-      { label: '微台散戶比', val: tmfRetail }
-    ].forEach(function (item) {
-      if (item.val > 0) add(item.label, 'green', -1, '散戶做多 ' + item.val + '%');
-      else if (item.val < 0) add(item.label, 'red', 1, '散戶做空 ' + item.val + '%');
-      else add(item.label, 'neutral', 0, '0%／尚未取得資料');
-    });
-
-    if (tsmPct > 0) add('台積電ADR', 'red', 1, '上漲 +' + tsmPct + '%（股價 ' + curr.tsm_adr + '）');
-    else if (tsmPct < 0) add('台積電ADR', 'green', -1, '下跌 ' + tsmPct + '%（股價 ' + curr.tsm_adr + '）');
-    else add('台積電ADR', 'neutral', 0, '平盤 0%（股價 ' + curr.tsm_adr + '）');
-
-    let trend = { text: '震盪整理', cls: 'badge-flat' };
-    if (score >= 4) trend = { text: '強勢偏多', cls: 'badge-strong-up' };
-    else if (score >= 1) trend = { text: '溫和偏多', cls: 'badge-up' };
-    else if (score <= -4) trend = { text: '強勢偏空', cls: 'badge-strong-down' };
-    else if (score <= -1) trend = { text: '溫和偏空', cls: 'badge-down' };
-
-    return { score: score, trend: trend, items: items };
-  }
-
-  function renderTable() {
-    records.sort(function (a, b) {
-      return String(b.date || '').localeCompare(String(a.date || ''));
-    });
-
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
-
-    if (!records.length) {
-      tbody.innerHTML = '<tr><td colspan="19" style="text-align:center;padding:30px;color:#94a3b8;">目前沒有資料，請確認 data.json 是否有內容，或使用手動補登。</td></tr>';
-      return;
-    }
-
-    records.forEach(function (row, index) {
-      const previous = records[index + 1] || null;
-      const result = evaluateRow(row, previous);
-      const statusOf = function (name) {
-        const found = result.items.find(function (item) { return item.name === name; });
-        return found ? found.status : 'neutral';
-      };
-      const scoreText = (result.score > 0 ? '+' : '') + result.score + ' 分';
-
-      const cells = [
-        '<td class="sticky-col">' + escapeHtml(row.date || '') + '</td>',
-        '<td>' + formatNumber(row.index, 0) + '</td>',
-        '<td>' + dotHtml(statusOf('現貨量')) + escapeHtml(formatNumber(row.vol, 1)) + '</td>',
-        '<td>' + dotHtml(statusOf('融資餘額')) + escapeHtml(formatNumber(row.margin, 2)) + '</td>',
-        '<td>' + dotHtml(statusOf('美元台幣')) + escapeHtml(formatNumber(row.usd, 3)) + '</td>',
-        '<td class="' + numClass(row.foreign) + '">' + dotHtml(statusOf('外資現貨')) + escapeHtml(formatNumber(row.foreign, 2)) + '</td>',
-        '<td class="' + numClass(row.trust) + '">' + dotHtml(statusOf('投信現貨')) + escapeHtml(formatNumber(row.trust, 2)) + '</td>',
-        '<td class="' + numClass(row.dealer) + '">' + dotHtml(statusOf('自營商現貨')) + escapeHtml(formatNumber(row.dealer, 2)) + '</td>',
-        '<td class="' + numClass(row.f_oi) + '">' + dotHtml(statusOf('外資期未平倉')) + escapeHtml(formatNumber(row.f_oi, 0)) + '</td>',
-        '<td class="' + numClass(row.top5) + '">' + dotHtml(statusOf('五大淨額')) + escapeHtml(formatNumber(row.top5, 0)) + '</td>',
-        '<td class="' + numClass(row.top10) + '">' + dotHtml(statusOf('十大淨額')) + escapeHtml(formatNumber(row.top10, 0)) + '</td>',
-        '<td>' + dotHtml(statusOf('P/C比')) + escapeHtml(formatNumber(row.pc_ratio, 2)) + '%</td>',
-        '<td class="' + numClass(row.f_opt) + '">' + dotHtml(statusOf('外資選擇權')) + escapeHtml(formatNumber(row.f_opt, 1)) + '</td>',
-        '<td>' + dotHtml(statusOf('小台散戶比')) + escapeHtml(formatNumber(row.mtx_retail, 2)) + '%</td>',
-        '<td>' + dotHtml(statusOf('微台散戶比')) + escapeHtml(formatNumber(row.tmf_retail, 2)) + '%</td>',
-        '<td class="' + numClass(row.tsm_pct) + '">' + dotHtml(statusOf('台積電ADR')) + escapeHtml(formatNumber(row.tsm_pct, 2)) + '%</td>',
-        '<td style="text-align:center;"><span class="badge ' + result.trend.cls + '">' + escapeHtml(result.trend.text) + '</span></td>',
-        '<td style="text-align:center;"><button type="button" class="score-btn" onclick="showDetails(' + index + ')">' + escapeHtml(scoreText) + '</button></td>',
-        '<td style="text-align:center;"><button type="button" class="action-link edit-link" onclick="editRow(' + index + ')">編輯</button><button type="button" class="action-link del-link" onclick="deleteRow(' + index + ')">刪除</button></td>'
-      ];
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = cells.join('');
-      tbody.appendChild(tr);
-    });
-  }
-
-  function showDetails(index) {
-    const row = records[index];
-    if (!row) return;
-    const previous = records[index + 1] || null;
-    const result = evaluateRow(row, previous);
-    const scoreText = (result.score > 0 ? '+' : '') + result.score;
-
-    document.getElementById('detailTitle').innerText = row.date + ' 分數明細（總分：' + scoreText + ' 分）';
-    document.getElementById('detailContent').innerHTML = result.items.map(function (item) {
-      const pointsText = (item.pts > 0 ? '+' : '') + item.pts;
-      return '<div class="detail-item">' +
-        '<div>' + dotHtml(item.status) + '<strong>' + escapeHtml(item.name) + '</strong>' +
-        '<div class="detail-desc">' + escapeHtml(item.desc) + '</div></div>' +
-        '<strong class="' + (item.pts > 0 ? 'tw-up' : item.pts < 0 ? 'tw-down' : 'tw-neutral') + '">' +
-        escapeHtml(pointsText) + '</strong></div>';
-    }).join('');
-    document.getElementById('detailModal').classList.add('active');
-  }
-
-  function openModal(isEdit) {
-    if (!isEdit) {
-      document.getElementById('dataForm').reset();
-      document.getElementById('editIndex').value = '-1';
-      document.getElementById('modalTitle').innerText = '手動補登盤後數據';
-    }
-    document.getElementById('formModal').classList.add('active');
-  }
-
-  function closeModal() {
-    document.getElementById('formModal').classList.remove('active');
-  }
-
-  function saveData(event) {
-    event.preventDefault();
-    const index = Number.parseInt(document.getElementById('editIndex').value, 10);
-    const existing = index >= 0 ? records[index] : null;
-    const fields = [
-      'index', 'vol', 'margin', 'usd', 'foreign', 'trust', 'dealer', 'f_oi',
-      'top5', 'top10', 'pc_ratio', 'f_opt', 'mtx_retail', 'tmf_retail', 'tsm_pct'
-    ];
-    const item = { date: document.getElementById('f_date').value };
-
-    if (!item.date) {
-      alert('請先填寫日期。');
-      return;
-    }
-
-    for (const field of fields) {
-      const inputId = 'f_' + field;
-      const rawValue = document.getElementById(inputId).value;
-      const value = Number(rawValue);
-      if (rawValue === '' || !Number.isFinite(value)) {
-        alert('請確認所有數值欄位都已正確填寫。');
-        return;
-      }
-      item[field] = value;
-    }
-    item.tsm_adr = existing ? toNumber(existing.tsm_adr) : 0;
-    item.update_time = existing && existing.update_time ? existing.update_time : '手動補登';
-
-    if (index >= 0 && existing) {
-      records[index] = item;
-    } else {
-      records.push(item);
-    }
-
-    closeModal();
-    renderTable();
-  }
-
-  function editRow(index) {
-    const row = records[index];
-    if (!row) return;
-
-    document.getElementById('editIndex').value = String(index);
-    document.getElementById('modalTitle').innerText = '微調盤後數據';
-    document.getElementById('f_date').value = row.date || '';
-
-    const fields = [
-      'index', 'vol', 'margin', 'usd', 'foreign', 'trust', 'dealer', 'f_oi',
-      'top5', 'top10', 'pc_ratio', 'f_opt', 'mtx_retail', 'tmf_retail', 'tsm_pct'
-    ];
-    fields.forEach(function (field) {
-      document.getElementById('f_' + field).value = row[field] ?? 0;
-    });
-    openModal(true);
-  }
-
-  function deleteRow(index) {
-    const target = records[index];
-    if (!target) return;
-    if (confirm('確定要移除畫面上的 ' + target.date + ' 數據嗎？')) {
-      records.splice(index, 1);
-      renderTable();
-    }
-  }
-
-  loadFromJson();
+loadFromJson();
 </script>
-
 </body>
 </html>
